@@ -159,6 +159,11 @@
   }
 
   function coloringBodyHTML(page) {
+    if (page.customImage) {
+      // the buyer's own picture, converted to line art (Workstream 4)
+      return '<div class="coloring-wrap"><img class="custom-coloring-img" src="' +
+        page.customImage.dataUrl + '" alt="Your picture as a coloring page"></div>';
+    }
     var d = KAB.getDesign(page.designId);
     return '<div class="coloring-wrap">' + designSVG(d) + '</div>';
   }
@@ -292,6 +297,29 @@
     return h + '</div>';
   }
 
+  /* ---------- Reading Strips ---------- */
+
+  function readingBodyHTML(page, opts) {
+    opts = opts || {};
+    var h = '<div class="strips">';
+    page.strips.forEach(function (s, i) {
+      h += '<div class="strip"><p class="strip-sentence"><span class="prob-num">' +
+        (i + 1) + ')</span> ' + esc(s.sentence) + '</p><div class="strip-pics">';
+      s.choices.forEach(function (cid, ci) {
+        var d = KAB.getDesign(cid);
+        var correct = opts.solution && ci === s.answerIndex;
+        h += '<div class="strip-choice' + (correct ? ' correct' : '') + '">' +
+          '<div class="strip-pic">' + (d ? designSVG(d, { lw: 6 }) : '') + '</div>';
+        if (page.style === 'bubble') {
+          h += '<span class="bubble' + (correct ? ' filled' : '') + '"></span>';
+        }
+        h += '</div>';
+      });
+      h += '</div></div>';
+    });
+    return h + '</div>';
+  }
+
   /* ---------- Dispatch + answer key ---------- */
 
   function pageBodyHTML(page, opts) {
@@ -306,6 +334,7 @@
       case 'tracing': return '<div class="tracing-wrap">' + tracingSVG(page) + '</div>';
       case 'counting': return countingBodyHTML(page, opts);
       case 'oddoneout': return oddBodyHTML(page, opts);
+      case 'reading': return readingBodyHTML(page, opts);
       default: return '';
     }
   }
@@ -329,7 +358,7 @@
     pageHeaderHTML: pageHeaderHTML,
     mazeSVG: mazeSVG, wordSearchSVG: wordSearchSVG,
     designSVG: designSVG, dotToDotSVG: dotToDotSVG, tracingSVG: tracingSVG,
-    iconGroup: iconGroup, iconSVG: iconSVG,
+    iconGroup: iconGroup, iconSVG: iconSVG, readingBodyHTML: readingBodyHTML,
     pageBodyHTML: pageBodyHTML, pageHTML: pageHTML,
     answerKeyHTML: answerKeyHTML
   };

@@ -171,6 +171,29 @@ body {
 .odd-svg { width: 100%; height: auto; }
 .odd-answer { font-size: 14.5px; font-weight: 700; color: #2a7f62; margin: 6px 0 0; }
 
+/* reading strips */
+.strips { display: flex; flex-direction: column; gap: 20px; padding: 4px 2px; }
+.strip { border: 1.5px solid #dbe6ea; border-radius: 12px; padding: 12px 16px 14px; }
+.strip-sentence { font-size: 21px; font-weight: 700; color: #0f2027; margin: 0 0 10px; }
+.strip-pics { display: flex; gap: 14px; }
+.strip-choice {
+  flex: 1; text-align: center; border-radius: 14px; padding: 8px 6px 6px;
+}
+.strip-choice.correct { outline: 4px solid #e63946; outline-offset: -2px; }
+.strip-pic svg { width: 100%; max-width: 150px; height: auto; }
+.bubble {
+  display: block; width: 22px; height: 22px; margin: 8px auto 2px;
+  border: 2.5px solid #14232b; border-radius: 50%;
+}
+.bubble.filled { background: #14232b; }
+
+/* coloring extras: search + own-picture upload */
+.upload-block { border-top: 2px dashed #c8d6dc; margin-top: 16px; padding-top: 14px; }
+.upload-h { margin: 0 0 12px; font-size: 16px; color: #0f2027; }
+.controls input[type="file"] { display: block; width: 100%; margin-top: 6px; font-size: 14px; }
+.controls input[type="range"] { display: block; width: 100%; margin-top: 6px; }
+.custom-coloring-img { max-width: 560px; width: 100%; height: auto; }
+
 /* answer key block (screen, under a page) */
 .akey { max-width: 860px; margin: 22px auto 0; border-top: 3px double #2c5364; padding-top: 12px; }
 .akey h3 { margin: 0 0 10px; color: #0f2027; font-size: 18px; }
@@ -208,6 +231,44 @@ body {
 .cover-count { font-size: 14px; color: #48626e; }
 .cover-brand { margin-top: 34px; letter-spacing: 4px; font-weight: 800; color: #b98a1d; font-size: 15px; }
 
+/* ---------- KDP wrap cover (one full-wrap page) ---------- */
+.wrap-cover {
+  display: flex; background: #fff; margin: 0 auto 26px; position: relative;
+  box-shadow: 0 6px 28px rgba(0,0,0,.45); color: #14232b;
+}
+.wc-back { position: relative; padding: 0.45in 0.4in; background: #fdfefe; }
+.wc-h { font-size: 21px; margin: 0 0 12px; color: #0f2027; }
+.wc-list { margin: 0 0 16px; padding-left: 20px; font-size: 14.5px; line-height: 1.85; color: #33505c; }
+.wc-blurb { font-size: 13.5px; color: #48626e; line-height: 1.55; }
+.wc-brand { letter-spacing: 4px; font-weight: 800; color: #b98a1d; font-size: 13px; margin-top: 22px; }
+.wc-barcode {
+  position: absolute; right: 0.25in; bottom: 0.25in; width: 2in; height: 1.2in;
+  border: 2px dashed #8aa0a9; background: #fff; color: #48626e;
+  display: flex; align-items: center; justify-content: center;
+  letter-spacing: 3px; font-weight: 700; font-size: 13px;
+}
+.wc-spine {
+  background: #0f2027; color: #ffd166; flex: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.wc-spine span {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font-weight: 800; letter-spacing: 2px; white-space: nowrap; font-size: 13px;
+}
+.wc-front {
+  background: linear-gradient(165deg, #0f2027, #2c5364); color: #fff;
+  text-align: center; padding: 0.5in 0.4in; display: flex; flex-direction: column; align-items: center;
+}
+.wc-title { font-size: 30px; margin: 0 0 8px; color: #ffd166; line-height: 1.2; }
+.wc-subtitle { font-size: 15px; margin: 0 0 14px; opacity: .92; }
+.wc-thumb {
+  background: #fff; border-radius: 8px; padding: 8px; margin: 0 auto 10px;
+  width: 72%; max-height: 2.1in; overflow: hidden; text-align: center;
+}
+.wc-thumb svg { width: 100%; height: auto; }
+.wc-thumb .ws-head, .wc-thumb .ws-instructions { display: none; }
+.wc-author { font-size: 15px; font-weight: 700; margin: auto 0 0; padding-top: 12px; }
+
 /* ---------- Print: only the book / print sheet, at page size ---------- */
 @media print {
   body { background: #fff; }
@@ -218,6 +279,10 @@ body {
     page-break-after: always; break-after: page;
   }
   .book-page:last-child { page-break-after: auto; break-after: auto; }
+  .wrap-cover {
+    margin: 0; box-shadow: none;
+    page-break-after: always; break-after: page;
+  }
 }
 
 @media (max-width: 880px) {

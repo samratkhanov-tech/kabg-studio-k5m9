@@ -157,10 +157,107 @@
   function planColoring(page, opts) {
     var plan = newPlan('coloring', page.title);
     var y0 = planHeader(plan, page, opts);
+    if (page.customImage && page.customImage.imageData) {
+      // the buyer's own picture as line art, fitted to the printable
+      // width and its own aspect ratio
+      var iw = page.customImage.width, ih = page.customImage.height;
+      var w = WIDTH - MARGIN * 2;
+      var h = Math.round(w * ih / Math.max(1, iw));
+      plan.ops.push({
+        t: 'imagedata', imageData: page.customImage.imageData,
+        x: MARGIN, y: y0, w: w, h: h
+      });
+      plan.height = y0 + h + MARGIN;
+      return plan;
+    }
     var scale = (WIDTH - MARGIN * 2) / 240;
     planDesign(plan, KAB.getDesign(page.designId), MARGIN, y0, scale, INK, 5.5);
     plan.height = y0 + 240 * scale + MARGIN;
     return plan;
+  }
+
+  /* ---------- "Your Own Picture" -> line art (pure pixel core) ----------
+   * The DOM-thin pipeline behind the Coloring tab's uploader:
+   * RGBA pixels -> grayscale -> 3x3 blur -> Sobel edges -> threshold
+   * to pure black lines on white. Everything here works on raw arrays
+   * so Node tests can exercise it without a browser; app.js only adds
+   * FileReader / Image / canvas plumbing around it. */
+
+  function imageGray(rgba, w, h) {
+    var gray = new Float32Array(w * h);
+    for (var i = 0; i < w * h; i++) {
+      var a = rgba[i * 4 + 3] / 255;
+      var lum = 0.299 * rgba[i * 4] + 0.587 * rgba[i * 4 + 1] + 0.114 * rgba[i * 4 + 2];
+      gray[i] = a * lum + (1 - a) * 255; // transparent pixels sit on white
+    }
+    return gray;
+  }
+
+  function blur3x3(gray, w, h) {
+    var out = new Float32Array(w * h);
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        var sum = 0;
+        for (var dy = -1; dy <= 1; dy++) {
+          var yy = Math.min(h - 1, Math.max(0, y + dy));
+          for (var dx = -1; dx <= 1; dx++) {
+            var xx = Math.min(w - 1, Math.max(0, x + dx));
+            sum += gray[yy * w + xx];
+          }
+        }
+        out[y * w + x] = sum / 9;
+      }
+    }
+    return out;
+  }
+
+  function sobelEdges(gray, w, h) {
+    var out = new Float32Array(w * h);
+    function px(x, y) {
+      x = Math.min(w - 1, Math.max(0, x));
+      y = Math.min(h - 1, Math.max(0, y));
+      return gray[y * w + x];
+    }
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        var gx = -px(x - 1, y - 1) - 2 * px(x - 1, y) - px(x - 1, y + 1)
+               + px(x + 1, y - 1) + 2 * px(x + 1, y) + px(x + 1, y + 1);
+        var gy = -px(x - 1, y - 1) - 2 * px(x, y - 1) - px(x + 1, y - 1)
+               + px(x - 1, y + 1) + 2 * px(x, y + 1) + px(x + 1, y + 1);
+        out[y * w + x] = Math.min(255, Math.hypot(gx, gy) / 4);
+      }
+    }
+    return out;
+  }
+
+  /* Detail slider (0-100) -> edge threshold. More detail = a lower
+     threshold = more lines kept. */
+  function thresholdFromDetail(detail) {
+    var d = Math.max(0, Math.min(100, detail == null ? 50 : detail));
+    return Math.round(235 - d * 2.05);
+  }
+
+  function edgesToLineArt(edge, w, h, threshold) {
+    var out = new Uint8ClampedArray(w * h * 4);
+    for (var i = 0; i < w * h; i++) {
+      var v = edge[i] >= threshold ? 0 : 255;
+      out[i * 4] = v; out[i * 4 + 1] = v; out[i * 4 + 2] = v; out[i * 4 + 3] = 255;
+    }
+    return out;
+  }
+
+  /* Full pipeline split in two so the Detail slider can re-threshold
+     from the cached edge map without re-reading the file. */
+  function processImageData(rgba, w, h) {
+    var gray = imageGray(rgba, w, h);
+    var edge = sobelEdges(blur3x3(gray, w, h), w, h);
+    return { gray: gray, edge: edge, width: w, height: h };
+  }
+
+  function imageToLineArt(rgba, w, h, detail) {
+    var p = processImageData(rgba, w, h);
+    var t = thresholdFromDetail(detail);
+    return { data: edgesToLineArt(p.edge, w, h, t), width: w, height: h, threshold: t };
   }
 
   /* ---------- Dot-to-Dot ---------- */
@@ -298,6 +395,147 @@
     return plan;
   }
 
+  /* ---------- Reading Strips ---------- */
+  function planReading(page, opts) {
+    var plan = newPlan('reading', page.title);
+    var y0 = planHeader(plan, page, opts);
+    var gap = 60;
+    var picW = (WIDTH - MARGIN * 2 - gap * 2) / 3;
+    var picH = picW * 0.92;
+    var y = y0;
+    page.strips.forEach(function (s, i) {
+      text(plan, MARGIN, y + 30, (i + 1) + ')  ' + s.sentence, 62,
+        { align: 'left', weight: 700 });
+      var py = y + 78;
+      s.choices.forEach(function (cid, ci) {
+        var x = MARGIN + ci * (picW + gap);
+        var d = KAB.getDesign(cid);
+        if (d) planDesign(plan, d, x + picW * 0.14, py, (picW * 0.72) / 240, INK, 6);
+        if (opts.solution && ci === s.answerIndex) {
+          plan.ops.push({
+            t: 'ring', x: x + picW / 2, y: py + picH / 2,
+            r: picW * 0.46, lw: 13, color: RED
+          });
+        }
+        if (page.style === 'bubble') {
+          var bx = x + picW / 2, by = py + picH + 52;
+          if (opts.solution && ci === s.answerIndex) {
+            plan.ops.push({ t: 'circle', x: bx, y: by, r: 26, color: INK });
+          } else {
+            plan.ops.push({ t: 'ring', x: bx, y: by, r: 26, lw: 6, color: INK });
+          }
+        }
+      });
+      y = py + picH + (page.style === 'bubble' ? 130 : 56);
+    });
+    plan.height = y + MARGIN;
+    return plan;
+  }
+
+  /* ---------- KDP wrap cover (single full-wrap page, ~300 DPI) ----------
+   * cover: { title, subtitle, author, dims (KAB.wrapCoverDims),
+   *          summary (KAB.bookSectionSummary), thumbDesigns: [ids] }
+   * The canvas is dims.width x dims.height INCHES at 300 px/in, laid
+   * out as [back | spine | front] with the bleed inside the dims. */
+  function planWrapCover(cover) {
+    var dims = cover.dims;
+    var S = 300; // px per inch
+    var plan = {
+      type: 'wrapcover', title: cover.title || '',
+      width: Math.round(dims.width * S), height: Math.round(dims.height * S),
+      ops: [{ t: 'bg', color: '#ffffff' }]
+    };
+    var B = dims.bleed * S;
+    var trimW = dims.trimW * S, trimH = dims.trimH * S;
+    var spineW = dims.spine * S;
+    var backX = B, spineX = B + trimW, frontX = spineX + spineW;
+    var top = B;
+
+    // front + spine brand blocks
+    plan.ops.push({ t: 'rect', x: spineX, y: 0, w: spineW, h: plan.height, color: '#0f2027' });
+    plan.ops.push({ t: 'rect', x: frontX, y: 0, w: plan.width - frontX, h: plan.height, color: '#2c5364' });
+
+    // back cover: "Inside this book" from the book's real sections
+    var by = top + 130;
+    text(plan, backX + 110, by, 'Inside this book', 92, { align: 'left', weight: 800, color: '#0f2027' });
+    by += 120;
+    (cover.summary || []).forEach(function (s) {
+      var lineStr = '•  ' + s.count + ' ' + s.label +
+        (s.levels && s.levels.length ? ' (' + s.levels.join(', ') + ')' : '');
+      text(plan, backX + 110, by, lineStr, 62, { align: 'left', color: '#33505c' });
+      by += 92;
+    });
+    by += 40;
+    text(plan, backX + 110, by, 'Create complete kids activity books in minutes —', 56, { align: 'left', color: '#48626e' });
+    text(plan, backX + 110, by + 76, 'print-ready pages with all solutions included.', 56, { align: 'left', color: '#48626e' });
+    text(plan, backX + 110, by + 200, 'SONGLAP DEALS', 54, { align: 'left', weight: 800, color: '#b98a1d' });
+    // barcode placeholder: 2in x 1.2in at the back cover's bottom-right
+    var bcW = 2 * S, bcH = 1.2 * S;
+    var bcX = backX + trimW - 0.25 * S - bcW, bcY = top + trimH - 0.25 * S - bcH;
+    plan.ops.push({ t: 'rect', x: bcX, y: bcY, w: bcW, h: bcH, color: '#ffffff' });
+    plan.ops.push({ t: 'frame', x: bcX, y: bcY, w: bcW, h: bcH, lw: 5, color: '#8aa0a9' });
+    text(plan, bcX + bcW / 2, bcY + bcH / 2, 'BARCODE', 64, { weight: 700, color: '#48626e' });
+
+    // spine text (only when the spine is wide enough — see wrapCoverDims)
+    if (dims.spineText) {
+      plan.ops.push({
+        t: 'textrot', x: spineX + spineW / 2, y: plan.height / 2,
+        str: (cover.title || '') + (cover.author ? '  ·  ' + cover.author : ''),
+        size: Math.min(64, spineW * 0.52), font: FONT, weight: 800,
+        color: GOLD, align: 'center', rot: -90
+      });
+    }
+
+    // front cover
+    var fx = frontX + (plan.width - frontX) / 2;
+    var fy = top + 300;
+    text(plan, fx, fy, cover.title || 'My Kids Activity Book', 150,
+      { weight: 800, color: GOLD });
+    fy += 130;
+    if (cover.subtitle) {
+      text(plan, fx, fy, cover.subtitle, 66, { color: '#ffffff' });
+      fy += 120;
+    }
+    var thumbs = (cover.thumbDesigns || []).slice(0, 3);
+    var tw = Math.min(trimW * 0.62, 640), th = tw;
+    thumbs.forEach(function (id, i) {
+      var d = KAB.getDesign(id);
+      if (!d) return;
+      var tx = fx - tw / 2, ty = fy + i * (th * 0.52);
+      plan.ops.push({ t: 'rect', x: tx, y: ty, w: tw, h: th * 0.48, color: '#ffffff' });
+      planDesign(plan, d, tx + tw * 0.3, ty + th * 0.03, (tw * 0.4) / 240, INK, 6);
+    });
+    if (cover.author) {
+      text(plan, fx, top + trimH - 150, 'by ' + cover.author, 72,
+        { weight: 700, color: '#ffffff' });
+    }
+    return plan;
+  }
+
+  function downloadWrapCoverPNG(cover) {
+    var plan = planWrapCover(cover);
+    var canvas = document.createElement('canvas');
+    renderPlan(canvas, plan);
+    function save(href) {
+      var a = document.createElement('a');
+      a.href = href;
+      a.download = 'wrap-cover.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+    if (canvas.toBlob) {
+      canvas.toBlob(function (blob) {
+        var url = URL.createObjectURL(blob);
+        save(url);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      }, 'image/png');
+    } else {
+      save(canvas.toDataURL('image/png'));
+    }
+    return plan;
+  }
+
   /* ---------- dispatch ---------- */
   function buildPlan(page, opts) {
     opts = opts || {};
@@ -309,6 +547,7 @@
       case 'tracing': return planTracing(page, opts);
       case 'counting': return planCounting(page, opts);
       case 'oddoneout': return planOddOneOut(page, opts);
+      case 'reading': return planReading(page, opts);
       default: return newPlan(page.type, page.title);
     }
   }
@@ -410,6 +649,27 @@
           ctx.textBaseline = 'middle';
           ctx.fillText(op.str, op.x, op.y);
           break;
+        case 'textrot':
+          if (!op.str) break;
+          ctx.save();
+          ctx.translate(op.x, op.y);
+          ctx.rotate((op.rot || 0) * Math.PI / 180);
+          ctx.fillStyle = op.color;
+          ctx.font = op.weight + ' ' + op.size + 'px ' + op.font;
+          ctx.textAlign = op.align;
+          ctx.textBaseline = 'middle';
+          ctx.fillText(op.str, 0, 0);
+          ctx.restore();
+          break;
+        case 'imagedata': {
+          var tmp = document.createElement('canvas');
+          tmp.width = op.imageData.width;
+          tmp.height = op.imageData.height;
+          tmp.getContext('2d').putImageData(
+            new ImageData(op.imageData.data, op.imageData.width, op.imageData.height), 0, 0);
+          ctx.drawImage(tmp, op.x, op.y, op.w, op.h);
+          break;
+        }
         case 'textbase':
           if (!op.str) break;
           ctx.fillStyle = op.color;
@@ -475,6 +735,16 @@
     planTracing: planTracing,
     planCounting: planCounting,
     planOddOneOut: planOddOneOut,
+    planReading: planReading,
+    planWrapCover: planWrapCover,
+    downloadWrapCoverPNG: downloadWrapCoverPNG,
+    imageGray: imageGray,
+    blur3x3: blur3x3,
+    sobelEdges: sobelEdges,
+    thresholdFromDetail: thresholdFromDetail,
+    edgesToLineArt: edgesToLineArt,
+    processImageData: processImageData,
+    imageToLineArt: imageToLineArt,
     WIDTH: WIDTH
   };
 

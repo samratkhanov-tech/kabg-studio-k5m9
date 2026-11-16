@@ -142,19 +142,140 @@ if (typeof module !== 'undefined' && module.exports) {
 
   var state = {}; // key -> { page, showSolution }
 
-  function fillDesignSelect(id) {
+  /* Fill a design <select>. opts: { ids: [design ids to offer],
+     filter: name substring (case-insensitive) }. Keeps the current
+     selection when it is still in the list. */
+  function fillDesignSelect(id, opts) {
+    opts = opts || {};
     var sel = $(id);
+    var prev = sel.value;
+    var f = (opts.filter || '').toLowerCase();
     var h = '<option value="">🎲 Random design</option>';
+    var any = false;
     KAB.DESIGNS.forEach(function (d) {
+      if (opts.ids && opts.ids.indexOf(d.id) === -1) return;
+      if (f && d.name.toLowerCase().indexOf(f) === -1) return;
+      any = true;
       h += '<option value="' + d.id + '">' + d.name + '</option>';
     });
+    if (!any) h += '<option value="" disabled>No match — try the upload below</option>';
     sel.innerHTML = h;
+    if (prev && sel.querySelector('option[value="' + prev + '"]')) sel.value = prev;
+    return any;
+  }
+
+  /* ---------- Coloring extras: name search + "Your Own Picture" ---------- */
+
+  var customImg = null; // { edge, width, height, name, dataUrl, imageData }
+
+  function customColoringPage() {
+    return {
+      type: 'coloring', title: 'Coloring — Your Picture',
+      instructions: 'Color the picture with your favorite colors!',
+      designId: 'custom-upload', designName: 'Your Picture',
+      customImage: {
+        dataUrl: customImg.dataUrl, imageData: customImg.imageData,
+        width: customImg.width, height: customImg.height, name: customImg.name
+      }
+    };
+  }
+
+  function showCustomPage() {
+    state.coloring.page = customColoringPage();
+    state.coloring.showSolution = false;
+    $('coloring-print').disabled = false;
+    $('coloring-png').disabled = false;
+    $('coloring-add-book').disabled = false;
+    draw('coloring');
+  }
+
+  /* Re-threshold from the cached edge map — the file is never re-read
+     when the Detail slider moves. */
+  function applyCustomDetail() {
+    if (!customImg) return;
+    var detail = parseInt($('coloring-detail').value, 10);
+    var threshold = PNGExport.thresholdFromDetail(isNaN(detail) ? 50 : detail);
+    var rgba = PNGExport.edgesToLineArt(customImg.edge, customImg.width, customImg.height, threshold);
+    var canvas = document.createElement('canvas');
+    canvas.width = customImg.width;
+    canvas.height = customImg.height;
+    canvas.getContext('2d').putImageData(new ImageData(rgba, customImg.width, customImg.height), 0, 0);
+    customImg.dataUrl = canvas.toDataURL('image/png');
+    customImg.imageData = { data: rgba, width: customImg.width, height: customImg.height };
+    showCustomPage();
+  }
+
+  function initColoringExtras() {
+    // Part A — search the built-in library by name
+    $('coloring-search').addEventListener('input', function () {
+      var q = $('coloring-search').value;
+      var any = fillDesignSelect('coloring-design', { filter: q });
+      $('coloring-nomatch').hidden = any || !q.trim();
+    });
+
+    // Part B — upload a picture and turn it into a coloring page
+    $('coloring-file').addEventListener('change', function () {
+      var file = $('coloring-file').files && $('coloring-file').files[0];
+      if (!file) return;
+      var status = $('coloring-custom-status');
+      status.textContent = 'Loading your picture…';
+      var reader = new FileReader();
+      reader.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var maxSide = 1200;
+          var scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          var w = Math.max(1, Math.round(img.width * scale));
+          var h = Math.max(1, Math.round(img.height * scale));
+          var canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          var pixels;
+          try {
+            pixels = ctx.getImageData(0, 0, w, h);
+          } catch (e) {
+            status.textContent = 'That picture could not be read. Please try another image file.';
+            return;
+          }
+          var processed = PNGExport.processImageData(pixels.data, w, h);
+          customImg = {
+            edge: processed.edge, width: w, height: h,
+            name: file.name || 'Your Picture', dataUrl: '', imageData: null
+          };
+          applyCustomDetail();
+          status.textContent = 'Your picture is now a coloring page! Move the Detail slider ' +
+            'for more or fewer lines, print it, download the PNG, or add it to your book.';
+        };
+        img.onerror = function () {
+          status.textContent = 'That file does not look like a picture. Please try a JPG or PNG.';
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    $('coloring-detail').addEventListener('input', applyCustomDetail);
+
+    $('coloring-add-book').addEventListener('click', function () {
+      if (!customImg || !window.BookBuilder) return;
+      var n = BookBuilder.addCustomColoringPage(customColoringPage());
+      $('coloring-custom-status').textContent = 'Added to your book (' + n +
+        ' own-picture page' + (n === 1 ? '' : 's') + ' waiting). ' +
+        'It will appear in the Coloring section the next time you build the book in the Book Builder tab.';
+    });
   }
 
   function initApp() {
     initTabs();
     fillDesignSelect('coloring-design');
-    fillDesignSelect('dottodot-design');
+    // dot-to-dot offers the silhouette pool (mandalas excluded — their
+    // outline is only the plain outer ring)
+    fillDesignSelect('dottodot-design', { ids: KAB.D2D_POOL });
+    initColoringExtras();
 
     wireActivity('mazes', {
       solution: true,
@@ -240,6 +361,33 @@ if (typeof module !== 'undefined' && module.exports) {
       },
       status: function () {
         return 'Four groups per page — one picture in each group is different.';
+      }
+    });
+
+    wireActivity('reading', {
+      solution: true,
+      make: function (rng) {
+        return KAB.generateReadingStripsPage({
+          level: $('reading-level').value,
+          perPage: parseInt($('reading-perpage').value, 10) || 6,
+          style: $('reading-style').value,
+          customText: $('reading-custom').value
+        }, rng);
+      },
+      status: function (page) {
+        if (page.custom) {
+          if (!page.strips.length) {
+            return 'None of your sentences names a picture from the library (' +
+              page.skippedCount + ' skipped). Try words like cat, rocket, whale or cake.';
+          }
+          return 'Made ' + page.usedCount + ' strip' + (page.usedCount === 1 ? '' : 's') +
+            ' from your sentences' +
+            (page.skippedCount ? ' — ' + page.skippedCount +
+              ' line' + (page.skippedCount === 1 ? '' : 's') +
+              ' skipped (no picture word found).' : '.');
+        }
+        return page.strips.length + ' reading strips at ' + page.levelLabel +
+          ' level — each sentence matches exactly one picture.';
       }
     });
 

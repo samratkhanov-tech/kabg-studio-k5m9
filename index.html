@@ -41,7 +41,7 @@
         <div class="brand-tag">Kids Activity Book Generator</div>
       </div>
     </div>
-    <div class="header-note">Mazes · Word Search · Coloring Pages · Dot-to-Dot · Tracing · Counting · Odd One Out → print-ready activity books with solutions · Perfect for Ages 4–8</div>
+    <div class="header-note">Mazes · Word Search · Coloring Pages · Dot-to-Dot · Tracing · Reading Strips · Counting · Odd One Out → print-ready activity books with solutions · Perfect for Ages 4–8</div>
   </div>
 </header>
 
@@ -53,6 +53,7 @@
   <button class="tab" data-tab="tracing">Tracing</button>
   <button class="tab" data-tab="counting">Counting</button>
   <button class="tab" data-tab="oddoneout">Odd One Out</button>
+  <button class="tab" data-tab="reading">Reading Strips</button>
   <button class="tab tab-book" data-tab="book">📕 Book Builder</button>
 </nav>
 
@@ -126,7 +127,11 @@
   <section class="panel" id="panel-coloring" hidden>
     <div class="controls card">
       <h2>Coloring Pages</h2>
-      <label>Design
+      <label>Search designs by name
+        <input type="text" id="coloring-search" placeholder="Type to filter — e.g. owl, boat, cake…" autocomplete="off">
+      </label>
+      <p class="hint" id="coloring-nomatch" hidden>No design matches that name — try the upload below to turn any picture into a coloring page.</p>
+      <label>Design (44 built-in designs)
         <select id="coloring-design">
           <option value="">🎲 Random design</option>
         </select>
@@ -137,9 +142,23 @@
         <button class="btn" id="coloring-png" disabled>⬇ PNG</button>
       </div>
       <p class="hint" id="coloring-status">Bold outlines and big areas to color — made for small hands and crayons.</p>
+      <div class="upload-block">
+        <h3 class="upload-h">Your Own Picture → Coloring Page</h3>
+        <label>Choose a picture from your device
+          <input type="file" id="coloring-file" accept="image/*">
+        </label>
+        <label>Detail
+          <input type="range" id="coloring-detail" min="0" max="100" value="50">
+        </label>
+        <div class="btn-row">
+          <button class="btn" id="coloring-add-book" disabled>➕ Add this picture to my book</button>
+        </div>
+        <p class="hint" id="coloring-custom-status">Simple pictures and clip-art give the cleanest lines; busy photos give busier line art.</p>
+        <p class="hint">Use pictures you own or have the right to use.</p>
+      </div>
     </div>
     <div class="stage card">
-      <div id="coloring-output" class="output"><p class="placeholder">Pick a design and click Generate.</p></div>
+      <div id="coloring-output" class="output"><p class="placeholder">Pick a design and click Generate — or upload your own picture.</p></div>
     </div>
   </section>
 
@@ -249,12 +268,55 @@
     </div>
   </section>
 
+  <!-- ===== READING STRIPS ===== -->
+  <section class="panel" id="panel-reading" hidden>
+    <div class="controls card">
+      <h2>Reading Strips</h2>
+      <label>Reader level
+        <select id="reading-level">
+          <option value="prek" selected>Pre-K</option>
+          <option value="kinder">Kindergarten</option>
+          <option value="grade1">Grade 1</option>
+          <option value="grade2">Grade 2</option>
+        </select>
+      </label>
+      <label>Strips per page
+        <select id="reading-perpage">
+          <option value="4">4 strips</option>
+          <option value="6" selected>6 strips</option>
+        </select>
+      </label>
+      <label>Answer style
+        <select id="reading-style">
+          <option value="circle" selected>Circle the picture</option>
+          <option value="bubble">Fill the bubble</option>
+        </select>
+      </label>
+      <label>Your own sentences (optional — one per line; each needs a picture word like cat, dog, rocket, whale…)
+        <textarea id="reading-custom" rows="4" placeholder="e.g. I see the cat.&#10;The boat is on the water."></textarea>
+      </label>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="reading-generate">Generate</button>
+        <button class="btn" id="reading-key" disabled>Show Solution</button>
+        <button class="btn" id="reading-print" disabled>🖨 Print / PDF</button>
+        <button class="btn" id="reading-png" disabled>⬇ PNG</button>
+      </div>
+      <p class="hint" id="reading-status">Read the sentence, then choose the one picture that matches. Sentences are built from the 40-picture library, so the matching picture is always there.</p>
+    </div>
+    <div class="stage card">
+      <div id="reading-output" class="output"><p class="placeholder">Choose a level and click Generate.</p></div>
+    </div>
+  </section>
+
   <!-- ===== BOOK BUILDER ===== -->
   <section class="panel panel-book" id="panel-book" hidden>
     <div class="controls card">
       <h2>Book Builder</h2>
       <label>Book title
         <input type="text" id="bk-title" value="My Kids Activity Book">
+      </label>
+      <label>Subtitle (for the wrap cover, optional)
+        <input type="text" id="bk-subtitle" value="">
       </label>
       <label>Author
         <input type="text" id="bk-author" value="">
@@ -271,15 +333,35 @@
         <label>Coloring <input type="number" id="bk-count-coloring" min="0" max="100" value="4"></label>
         <label>Dot-to-Dot <input type="number" id="bk-count-dottodot" min="0" max="100" value="3"></label>
         <label>Tracing <input type="number" id="bk-count-tracing" min="0" max="100" value="3"></label>
+        <label>Reading Strips <input type="number" id="bk-count-reading" min="0" max="100" value="2"></label>
         <label>Counting <input type="number" id="bk-count-counting" min="0" max="100" value="2"></label>
         <label>Odd One Out <input type="number" id="bk-count-oddoneout" min="0" max="100" value="2"></label>
       </div>
+      <label>Reading Strips level (for the book)
+        <select id="bk-reading-level">
+          <option value="prek" selected>Pre-K</option>
+          <option value="kinder">Kindergarten</option>
+          <option value="grade1">Grade 1</option>
+          <option value="grade2">Grade 2</option>
+        </select>
+      </label>
       <div class="btn-row">
         <button class="btn btn-primary" id="bk-build">Generate Book</button>
         <button class="btn btn-gold" id="bk-print" disabled>⬇ Download / Print PDF</button>
       </div>
       <p class="hint" id="bk-status">The book gets a title page, numbered activity pages (no duplicates), and a Solutions section at the back.
       In the print dialog choose <strong>Save as PDF</strong> and set margins to <strong>None</strong> — the page size is set automatically.</p>
+      <div class="upload-block">
+        <h3 class="upload-h">KDP Wrap Cover</h3>
+        <p class="hint">Builds a print-ready front + spine + back cover sized exactly from your book:
+        your trim size, the total page count, KDP white-paper spine width and 0.125 in bleed.
+        The back cover lists what is really inside your book.</p>
+        <div class="btn-row">
+          <button class="btn" id="bk-cover" disabled>🖼 Build Wrap Cover</button>
+          <button class="btn" id="bk-cover-png" disabled>⬇ Cover PNG (300 DPI)</button>
+        </div>
+        <p class="hint" id="bk-cover-status">Build your book first — then the wrap cover can be sized from it. Use the book's Download / Print PDF button to save the cover as a print-ready PDF.</p>
+      </div>
     </div>
     <div class="stage card stage-book">
       <div id="bk-output" class="output"><p class="placeholder">Set your counts and click Generate Book. The full book preview appears here.</p></div>
