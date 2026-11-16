@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Kids Activity Book Generator — Songlap Deals</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============ ACCESS GATE ============ -->
+<div id="lock-screen">
+  <div class="lock-card">
+    <div class="lock-logo">🧩</div>
+    <h1>Kids Activity Book Generator</h1>
+    <p class="lock-sub">A Songlap Deals tool for teachers, parents &amp; KDP publishers.<br>Printable kids activity pages for Ages 4–8.<br>
+    Enter your name and your access code to unlock.</p>
+    <form id="lock-form">
+      <input type="text" id="lock-name" placeholder="Your name" autocomplete="name" spellcheck="false">
+      <input type="text" id="lock-input" placeholder="Your access code" autocomplete="off"
+             autocapitalize="characters" spellcheck="false">
+      <button type="submit" class="btn btn-gold" id="lock-submit">Unlock</button>
+    </form>
+    <p id="lock-error" class="lock-error" hidden></p>
+    <p class="lock-note">Your name and code were included with your purchase delivery.</p>
+  </div>
+</div>
+
+<!-- ============ APP (hidden until unlocked) ============ -->
+<div id="app" hidden>
+
+<div id="license-bar" class="license-bar" hidden>Licensed to: <span id="license-name"></span> · <span id="license-code"></span></div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="brand">
+      <span class="brand-icon">🧩</span>
+      <div>
+        <div class="brand-name">SONGLAP DEALS</div>
+        <div class="brand-tag">Kids Activity Book Generator</div>
+      </div>
+    </div>
+    <div class="header-note">Mazes · Word Search · Coloring Pages · Dot-to-Dot · Tracing · Counting · Odd One Out → print-ready activity books with solutions · Perfect for Ages 4–8</div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="mazes">Mazes</button>
+  <button class="tab" data-tab="wordsearch">Word Search</button>
+  <button class="tab" data-tab="coloring">Coloring Pages</button>
+  <button class="tab" data-tab="dottodot">Dot-to-Dot</button>
+  <button class="tab" data-tab="tracing">Tracing</button>
+  <button class="tab" data-tab="counting">Counting</button>
+  <button class="tab" data-tab="oddoneout">Odd One Out</button>
+  <button class="tab tab-book" data-tab="book">📕 Book Builder</button>
+</nav>
+
+<main class="layout">
+
+  <!-- ===== MAZES ===== -->
+  <section class="panel" id="panel-mazes">
+    <div class="controls card">
+      <h2>Mazes</h2>
+      <label>Difficulty
+        <select id="mazes-size">
+          <option value="easy" selected>Easy (10 × 10)</option>
+          <option value="medium">Medium (14 × 14)</option>
+          <option value="hard">Challenge (18 × 18)</option>
+        </select>
+      </label>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="mazes-generate">Generate</button>
+        <button class="btn" id="mazes-key" disabled>Show Solution</button>
+        <button class="btn" id="mazes-print" disabled>🖨 Print / PDF</button>
+        <button class="btn" id="mazes-png" disabled>⬇ PNG</button>
+      </div>
+      <p class="hint" id="mazes-status">Every maze has exactly one solution path — no guessing, no dead ends that loop.</p>
+    </div>
+    <div class="stage card">
+      <div id="mazes-output" class="output"><p class="placeholder">Choose a difficulty and click Generate.</p></div>
+    </div>
+  </section>
+
+  <!-- ===== WORD SEARCH ===== -->
+  <section class="panel" id="panel-wordsearch" hidden>
+    <div class="controls card">
+      <h2>Word Search</h2>
+      <label>Theme
+        <select id="wordsearch-theme">
+          <option value="animals" selected>Animals</option>
+          <option value="ocean">Ocean</option>
+          <option value="space">Space</option>
+          <option value="food">Food</option>
+          <option value="sports">Sports</option>
+          <option value="nature">Nature</option>
+          <option value="custom">Your own words</option>
+        </select>
+      </label>
+      <label>Grid size
+        <select id="wordsearch-size">
+          <option value="10" selected>10 × 10</option>
+          <option value="12">12 × 12</option>
+        </select>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="wordsearch-diagonal"> Allow diagonal words
+      </label>
+      <label>Your own words (one per line or comma separated — used when the theme is “Your own words”)
+        <textarea id="wordsearch-custom" rows="4" placeholder="e.g. PUPPY, KITTEN, PARK, SLIDE"></textarea>
+      </label>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="wordsearch-generate">Generate</button>
+        <button class="btn" id="wordsearch-key" disabled>Show Solution</button>
+        <button class="btn" id="wordsearch-print" disabled>🖨 Print / PDF</button>
+        <button class="btn" id="wordsearch-png" disabled>⬇ PNG</button>
+      </div>
+      <p class="hint" id="wordsearch-status">Words run across and down (diagonals too, if you tick the box). Words that do not fit are reported, never hidden silently.</p>
+    </div>
+    <div class="stage card">
+      <div id="wordsearch-output" class="output"><p class="placeholder">Choose a theme and click Generate.</p></div>
+    </div>
+  </section>
+
+  <!-- ===== COLORING PAGES ===== -->
+  <section class="panel" id="panel-coloring" hidden>
+    <div class="controls card">
+      <h2>Coloring Pages</h2>
+      <label>Design
+        <select id="coloring-design">
+          <option value="">🎲 Random design</option>
+        </select>
+      </label>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="coloring-generate">Generate</button>
+        <button class="btn" id="coloring-print" disabled>🖨 Print / PDF</button>
+        <button class="btn" id="coloring-png" disabled>⬇ PNG</button>
+      </div>
+      <p class="hint" id="coloring-status">Bold outlines and big areas to color — made for small hands and crayons.</p>
+    </div>
+    <div class="stage card">
+      <div id="coloring-output" class="output"><p class="placeholder">Pick a design and click Generate.</p></div>
+    </div>
+  </section>
+
+  <!-- ===== DOT-TO-DOT ===== -->
+  <section class="panel" id="panel-dottodot" hidden>
+    <div class="controls card">
+      <h2>Dot-to-Dot</h2>
+      <label>Design
+        <select id="dottodot-design">
+          <option value="">🎲 Random design</option>
+        </select>
+      </label>
+      <label>How many dots
+        <select id="dottodot-dots">
+          <option value="20">About 20 (easier)</option>
+          <option value="30" selected>About 30</option>
+          <option value="40">About 40 (trickier)</option>
+        </select>
+      </label>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="dottodot-generate">Generate</button>
+        <button class="btn" id="dottodot-key" disabled>Show Solution</button>
+        <button class="btn" id="dottodot-print" disabled>🖨 Print / PDF</button>
+        <button class="btn" id="dottodot-png" disabled>⬇ PNG</button>
+      </div>
+      <p class="hint" id="dottodot-status">Connect the dots in number order to reveal the picture.</p>
+    </div>
+    <div class="stage card">
+      <div id="dottodot-output" class="output"><p class="placeholder">Pick a design and click Generate.</p></div>
+    </div>
+  </section>
+
+  <!-- ===== TRACING ===== -->
+  <section class="panel" id="panel-tracing" hidden>
+    <div class="controls card">
+      <h2>Tracing</h2>
+      <label>Practice set
+        <select id="tracing-mode">
+          <option value="upper" selected>Uppercase Letters A–Z</option>
+          <option value="lower">Lowercase Letters a–z</option>
+          <option value="numbers">Numbers 0–9</option>
+          <option value="words">Simple Words</option>
+        </select>
+      </label>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="tracing-generate">Generate</button>
+        <button class="btn" id="tracing-print" disabled>🖨 Print / PDF</button>
+        <button class="btn" id="tracing-png" disabled>⬇ PNG</button>
+      </div>
+      <p class="hint" id="tracing-status">Each row starts with a dark example, then dotted letters to trace. Generate again to move through the whole set.</p>
+    </div>
+    <div class="stage card">
+      <div id="tracing-output" class="output"><p class="placeholder">Choose a practice set and click Generate.</p></div>
+    </div>
+  </section>
+
+  <!-- ===== COUNTING ===== -->
+  <section class="panel" id="panel-counting" hidden>
+    <div class="controls card">
+      <h2>Counting</h2>
+      <label>Count up to
+        <select id="counting-range">
+          <option value="1-10" selected>10</option>
+          <option value="1-20">20</option>
+        </select>
+      </label>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="counting-generate">Generate</button>
+        <button class="btn" id="counting-key" disabled>Show Solution</button>
+        <button class="btn" id="counting-print" disabled>🖨 Print / PDF</button>
+        <button class="btn" id="counting-png" disabled>⬇ PNG</button>
+      </div>
+      <p class="hint" id="counting-status">Count the pictures in each group and write the number in the box.</p>
+    </div>
+    <div class="stage card">
+      <div id="counting-output" class="output"><p class="placeholder">Choose a range and click Generate.</p></div>
+    </div>
+  </section>
+
+  <!-- ===== ODD ONE OUT ===== -->
+  <section class="panel" id="panel-oddoneout" hidden>
+    <div class="controls card">
+      <h2>Odd One Out</h2>
+      <label>Difficulty
+        <select id="oddoneout-level">
+          <option value="easy" selected>Easy — a different picture</option>
+          <option value="medium">Medium — different colors</option>
+          <option value="hard">Hard — turned around</option>
+        </select>
+      </label>
+      <label>Group size
+        <select id="oddoneout-grid">
+          <option value="3" selected>3 × 3 (9 pictures)</option>
+          <option value="4">4 × 4 (16 pictures)</option>
+        </select>
+      </label>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="oddoneout-generate">Generate</button>
+        <button class="btn" id="oddoneout-key" disabled>Show Solution</button>
+        <button class="btn" id="oddoneout-print" disabled>🖨 Print / PDF</button>
+        <button class="btn" id="oddoneout-png" disabled>⬇ PNG</button>
+      </div>
+      <p class="hint" id="oddoneout-status">In every group, exactly one picture is different. Can your kids spot it?</p>
+    </div>
+    <div class="stage card">
+      <div id="oddoneout-output" class="output"><p class="placeholder">Choose a difficulty and click Generate.</p></div>
+    </div>
+  </section>
+
+  <!-- ===== BOOK BUILDER ===== -->
+  <section class="panel panel-book" id="panel-book" hidden>
+    <div class="controls card">
+      <h2>Book Builder</h2>
+      <label>Book title
+        <input type="text" id="bk-title" value="My Kids Activity Book">
+      </label>
+      <label>Author
+        <input type="text" id="bk-author" value="">
+      </label>
+      <label>Trim size
+        <select id="bk-size">
+          <option value="letter" selected>8.5 × 11 in</option>
+          <option value="kdp810">8.5 × 10 in</option>
+        </select>
+      </label>
+      <div class="count-grid">
+        <label>Mazes <input type="number" id="bk-count-maze" min="0" max="100" value="3"></label>
+        <label>Word Search <input type="number" id="bk-count-wordsearch" min="0" max="100" value="3"></label>
+        <label>Coloring <input type="number" id="bk-count-coloring" min="0" max="100" value="4"></label>
+        <label>Dot-to-Dot <input type="number" id="bk-count-dottodot" min="0" max="100" value="3"></label>
+        <label>Tracing <input type="number" id="bk-count-tracing" min="0" max="100" value="3"></label>
+        <label>Counting <input type="number" id="bk-count-counting" min="0" max="100" value="2"></label>
+        <label>Odd One Out <input type="number" id="bk-count-oddoneout" min="0" max="100" value="2"></label>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="bk-build">Generate Book</button>
+        <button class="btn btn-gold" id="bk-print" disabled>⬇ Download / Print PDF</button>
+      </div>
+      <p class="hint" id="bk-status">The book gets a title page, numbered activity pages (no duplicates), and a Solutions section at the back.
+      In the print dialog choose <strong>Save as PDF</strong> and set margins to <strong>None</strong> — the page size is set automatically.</p>
+    </div>
+    <div class="stage card stage-book">
+      <div id="bk-output" class="output"><p class="placeholder">Set your counts and click Generate Book. The full book preview appears here.</p></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">Songlap Deals</footer>
+</div><!-- /#app -->
+
+<!-- Book pages render here for screen preview AND print -->
+<div id="book-preview" hidden></div>
+
+<script src="generators.js"></script>
+<script src="render.js"></script>
+<script src="png.js"></script>
+<script src="app.js"></script>
+<script src="book.js"></script>
+</body>
+</html>
