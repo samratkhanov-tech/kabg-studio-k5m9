@@ -1897,8 +1897,12 @@
           (cycle * TRACING_ROWS_PER_SHEET) % items);
       },
       reading: function () {
+        /* 4 strips per book page: at the printed-sheet strip sizing
+           (styles.css .strips-roomy) 4 strips fit one sheet at both
+           trims; 6 would overflow the shorter 8.5x10 sheet. The
+           single-page tab still offers 4 or 6 (compact sizing). */
         return generateReadingStripsPage({
-          level: spec.readingLevel || 'prek', perPage: 6,
+          level: spec.readingLevel || 'prek', perPage: 4,
           style: 'circle', deck: wordDeck
         }, rng);
       },

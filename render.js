@@ -301,7 +301,11 @@
 
   function readingBodyHTML(page, opts) {
     opts = opts || {};
-    var h = '<div class="strips">';
+    /* The count class lets the printed-sheet CSS size the pictures
+       so a full page of strips fits one sheet (see styles.css):
+       <=4 strips get roomy pictures, 5+ get compact ones. */
+    var h = '<div class="strips ' +
+      (page.strips.length >= 5 ? 'strips-compact' : 'strips-roomy') + '">';
     page.strips.forEach(function (s, i) {
       h += '<div class="strip"><p class="strip-sentence"><span class="prob-num">' +
         (i + 1) + ')</span> ' + esc(s.sentence) + '</p><div class="strip-pics">';

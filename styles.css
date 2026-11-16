@@ -277,7 +277,12 @@ body {
   .book-page {
     margin: 0; box-shadow: none;
     page-break-after: always; break-after: page;
+    /* one .book-page is exactly one sheet: never split one across
+       two sheets (a split leaves a blank or footer-only sheet) */
+    page-break-inside: avoid; break-inside: avoid;
   }
+  /* atomic blocks move whole or stay whole — never sliced in half */
+  .strip, .odd-prob, .count-prob { page-break-inside: avoid; break-inside: avoid; }
   .book-page:last-child { page-break-after: auto; break-after: auto; }
   .wrap-cover {
     margin: 0; box-shadow: none;
@@ -285,9 +290,46 @@ body {
   }
 }
 
-@media (max-width: 880px) {
+@media screen and (max-width: 880px) {
   .panel { grid-template-columns: 1fr; }
   .header-note { display: none; }
   .akey-list { columns: 2; }
   .count-grid, .odd-grid { grid-template-columns: 1fr; }
 }
+
+/* ---------- Printed sheets (.book-page): fit-one-sheet sizing ----------
+   A .book-page is a fixed trim-size sheet (book pages and single-page
+   prints alike), so its layout must NEVER respond to the viewport:
+   the screen-only collapse above would otherwise fire at print time
+   too (a printed page is 816px wide, under the 880px breakpoint) and
+   stretch counting / odd-one-out pages to several times the sheet
+   height, slicing groups at the sheet edge. The rules below pin the
+   two-column grids and size the tallest page types so every page's
+   content fits inside one sheet at BOTH trims (8.5x11 and 8.5x10):
+   odd-one-out groups are capped at 272px columns, reading strips use
+   count-based picture sizes (render.js tags .strips-roomy for <=4
+   strips, .strips-compact for 5+), and a tall uploaded picture is
+   height-capped instead of overflowing. overflow:hidden on
+   .book-page stays only as a final safety net. */
+.book-page .count-grid { grid-template-columns: 1fr 1fr; gap: 14px 26px; }
+.book-page .odd-grid {
+  grid-template-columns: repeat(2, 272px); justify-content: center; gap: 18px 26px;
+}
+.book-page .count-prob .prob-num, .book-page .odd-prob .prob-num { margin-bottom: 2px; }
+.book-page .count-prompt { margin-top: 4px; }
+.book-page .odd-answer { margin-top: 3px; }
+
+.book-page .strips { gap: 12px; padding: 2px; }
+.book-page .strip { padding: 9px 12px 10px; }
+.book-page .strip-sentence { font-size: 19px; margin-bottom: 6px; }
+.book-page .strip-choice { padding: 5px 4px 4px; }
+.book-page .bubble { width: 16px; height: 16px; margin: 6px auto 2px; border-width: 2px; }
+.book-page .strips-roomy .strip-pic svg { max-width: 88px; }
+.book-page .strips-compact { gap: 10px; }
+.book-page .strips-compact .strip { padding: 7px 10px 8px; }
+.book-page .strips-compact .strip-sentence { font-size: 17px; margin-bottom: 4px; }
+.book-page .strips-compact .strip-choice { padding: 4px 3px 3px; }
+.book-page .strips-compact .strip-pic svg { max-width: 48px; }
+.book-page .strips-compact .bubble { width: 14px; height: 14px; margin: 5px auto 1px; }
+
+.book-page .custom-coloring-img { width: auto; max-width: 100%; max-height: 620px; }

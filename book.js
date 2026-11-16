@@ -131,6 +131,15 @@
     var ps = pageStyle(size);
     var out = [];
 
+    /* Defensive: a page whose body renders to nothing must never
+       reach the book as a blank sheet. Every current generator
+       produces a body, so this only guards future page types; the
+       same filtered list drives the activity AND solution loops so
+       the "Page N" numbering stays aligned. */
+    pages = pages.filter(function (p) {
+      return Render.pageBodyHTML(p).trim().length > 0;
+    });
+
     // title page
     out.push(
       '<div class="book-page cover-page" style="' + ps + '">' +
@@ -153,14 +162,18 @@
         '</div>');
     });
 
-    // solutions divider
+    // solutions divider — only when the book actually has answers;
+    // with none it would be a nearly-blank sheet ("Answers for 0
+    // activity pages") in books of just coloring / tracing pages
     var solvedCount = pages.filter(function (p) { return KAB.pageHasSolution(p); }).length;
-    out.push(
-      '<div class="book-page divider-page" style="' + ps + '">' +
-        '<div class="cover-inner"><h1 class="cover-title">Solutions</h1>' +
-        '<p class="cover-count">Answers for ' + solvedCount + ' activity pages</p>' +
-        '<p class="cover-count">Coloring and tracing pages have no answers — just have fun!</p></div>' +
-      '</div>');
+    if (solvedCount > 0) {
+      out.push(
+        '<div class="book-page divider-page" style="' + ps + '">' +
+          '<div class="cover-inner"><h1 class="cover-title">Solutions</h1>' +
+          '<p class="cover-count">Answers for ' + solvedCount + ' activity pages</p>' +
+          '<p class="cover-count">Coloring and tracing pages have no answers — just have fun!</p></div>' +
+        '</div>');
+    }
 
     // solution pages, keyed to the activity page numbers
     pages.forEach(function (page, idx) {
