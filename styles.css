@@ -126,7 +126,11 @@ body {
 .fill-line { display: inline-block; border-bottom: 1.5px solid #7d97a1; vertical-align: bottom; }
 .fill-name { min-width: 170px; }
 .fill-date { min-width: 110px; }
-.ws-instructions { font-size: 14.5px; color: #48626e; margin: 0 0 16px; }
+/* explicit line-height: with the default (normal) the line box is
+   sized from the primary font, and the arrow glyphs in the word-search
+   instructions (→ ↓ ↘) can come from a taller fallback font and get
+   visually truncated. 1.45 matches the layout model's assumption. */
+.ws-instructions { font-size: 14.5px; line-height: 1.45; color: #48626e; margin: 0 0 16px; }
 .prob-num { font-size: 13px; font-weight: 700; color: #7d97a1; }
 
 /* maze */
