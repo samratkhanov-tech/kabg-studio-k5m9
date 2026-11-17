@@ -1992,6 +1992,102 @@
     return out.slice(0, at).concat(customPages, out.slice(at));
   }
 
+  /* ---------------- Cover themes ----------------
+   * Modelled on the bestselling KDP kids' activity-book covers
+   * (Zoey Bird's "Mazes for Kids Ages 4-8", "The Big Activity Book
+   * for Kids" and their many imitators): a HUGE chunky title that
+   * stays readable at thumbnail size, ONE dominant saturated colour,
+   * an "Ages …" badge, a starburst "N+ Activities!" feature badge,
+   * a subtitle line listing the activity types, a collage of real
+   * sample pages, and the author's name at the bottom. Decorations
+   * are faceless geometric motifs only (stars, hearts, moons,
+   * rainbows, leaves) — no characters, no faces, no outside images.
+   * One theme object drives the HTML covers (book.js) and the PNG
+   * wrap cover (png.js) so every surface matches. */
+  var COVER_THEMES = [
+    {
+      id: 'rainbow', name: 'Rainbow Pop', deco: 'rainbow',
+      frontBg: 'linear-gradient(180deg, #fff8e7 0%, #ffeec2 100%)',
+      frontFlat: '#ffeec2', band: '#e63946',
+      titleColors: ['#e63946', '#f4840b', '#1e9e52', '#2470c2', '#7b2dbe'],
+      subtitleColor: '#8a5a12', lineColor: '#b3541e', authorColor: '#33505c',
+      badgeBg: '#e63946', badgeColor: '#ffffff',
+      ageBadgeBg: '#2470c2', ageBadgeColor: '#ffffff',
+      spineBg: '#e63946', spineColor: '#ffffff',
+      backBg: '#fff8e7', backHeading: '#14232b', backText: '#33505c'
+    },
+    {
+      id: 'space', name: 'Space Adventure', deco: 'space',
+      frontBg: 'linear-gradient(165deg, #0b1e4b 0%, #274690 100%)',
+      frontFlat: '#1b2a5e', band: '#ffd166',
+      titleColors: ['#ffd166'],
+      subtitleColor: '#cfe0ff', lineColor: '#aebfff', authorColor: '#ffffff',
+      badgeBg: '#ff8c1a', badgeColor: '#ffffff',
+      ageBadgeBg: '#e63946', ageBadgeColor: '#ffffff',
+      spineBg: '#0b1e4b', spineColor: '#ffd166',
+      backBg: '#eef1fb', backHeading: '#14265c', backText: '#33505c'
+    },
+    {
+      id: 'jungle', name: 'Jungle Safari', deco: 'jungle',
+      frontBg: 'linear-gradient(165deg, #14532d 0%, #22a04b 100%)',
+      frontFlat: '#1e7a3c', band: '#ffd166',
+      titleColors: ['#ffffff'],
+      subtitleColor: '#ffe9a8', lineColor: '#d9f2c2', authorColor: '#ffffff',
+      badgeBg: '#f4840b', badgeColor: '#ffffff',
+      ageBadgeBg: '#e63946', ageBadgeColor: '#ffffff',
+      spineBg: '#14532d', spineColor: '#ffd166',
+      backBg: '#eef7ee', backHeading: '#14532d', backText: '#33505c'
+    },
+    {
+      id: 'candy', name: 'Candy Sweet', deco: 'candy',
+      frontBg: 'linear-gradient(165deg, #a4133c 0%, #e75480 100%)',
+      frontFlat: '#c9184a', band: '#ffd166',
+      titleColors: ['#ffffff'],
+      subtitleColor: '#ffd6e7', lineColor: '#ffc2d9', authorColor: '#ffffff',
+      badgeBg: '#5f27cd', badgeColor: '#ffffff',
+      ageBadgeBg: '#ffd166', ageBadgeColor: '#7a1f3d',
+      spineBg: '#a4133c', spineColor: '#ffd6e7',
+      backBg: '#fdf0f5', backHeading: '#7a1f3d', backText: '#5c3350'
+    }
+  ];
+
+  function getCoverTheme(id) {
+    for (var i = 0; i < COVER_THEMES.length; i++) {
+      if (COVER_THEMES[i].id === id) return COVER_THEMES[i];
+    }
+    return COVER_THEMES[0];
+  }
+
+  /* Short cover-friendly names for the activity-types strip. */
+  var COVER_SHORT_LABELS = {
+    maze: 'Mazes', wordsearch: 'Word Search', coloring: 'Coloring',
+    dottodot: 'Dot-to-Dot', tracing: 'Tracing', reading: 'Reading',
+    counting: 'Counting', oddoneout: 'Odd One Out'
+  };
+
+  /* "Mazes • Coloring • Dot-to-Dot & More!" from a bookSectionSummary
+     (or anything with .type entries), in book order, de-duplicated. */
+  function coverActivityLine(summary) {
+    var labels = [];
+    (summary || []).forEach(function (s) {
+      var label = COVER_SHORT_LABELS[s.type] || s.label;
+      if (label && labels.indexOf(label) === -1) labels.push(label);
+    });
+    if (!labels.length) return '';
+    if (labels.length === 1) return labels[0] + ' Fun!';
+    if (labels.length <= 4) {
+      return labels.slice(0, -1).join(' • ') + ' & ' + labels[labels.length - 1] + '!';
+    }
+    return labels.slice(0, 4).join(' • ') + ' & More!';
+  }
+
+  /* The starburst feature badge: "22+" over "Activities!". */
+  function coverBadgeText(activityCount) {
+    var n = Math.max(0, activityCount | 0);
+    if (!n) return null;
+    return { big: n + '+', small: 'Activities!' };
+  }
+
   /* ---------------- API ---------------- */
 
   var api = {
@@ -2030,7 +2126,10 @@
     KDP_MIN_PAGES: KDP_MIN_PAGES, KDP_SPINE_TEXT_MIN: KDP_SPINE_TEXT_MIN,
     wrapCoverDims: wrapCoverDims, SECTION_LABELS: SECTION_LABELS,
     bookSectionSummary: bookSectionSummary,
-    insertCustomPages: insertCustomPages
+    insertCustomPages: insertCustomPages,
+    COVER_THEMES: COVER_THEMES, getCoverTheme: getCoverTheme,
+    COVER_SHORT_LABELS: COVER_SHORT_LABELS,
+    coverActivityLine: coverActivityLine, coverBadgeText: coverBadgeText
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
