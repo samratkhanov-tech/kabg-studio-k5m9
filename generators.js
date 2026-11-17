@@ -1838,7 +1838,8 @@
   var TRACING_MODE_KEYS = Object.keys(TRACING_MODES);
 
   /*
-   * spec: { counts: {maze: n, wordsearch: n, ...}, readingLevel }
+   * spec: { counts: {maze: n, wordsearch: n, ...}, readingLevel,
+   *         countingRange }
    * Returns an array of pages in BOOK_TYPE_ORDER. Makers cycle their
    * variant (maze size, WS theme, tracing mode/start, odd level) per
    * page, and every page is checked against the signatures already in
@@ -1907,7 +1908,13 @@
         }, rng);
       },
       counting: function () {
-        return generateCountingPage(rng() < 0.5 ? '1-10' : '1-20', rng, iconDeck);
+        /* One range for the whole book, chosen in the Book Builder —
+           the same choice the Counting tab offers, with the same
+           default ('1-10'). (Was: a per-page coin flip between the
+           two ranges, so books silently mixed ranges the buyer had
+           never picked.) */
+        return generateCountingPage(
+          spec.countingRange === '1-20' ? '1-20' : '1-10', rng, iconDeck);
       },
       oddoneout: function (v) {
         return generateOddOneOutPage(['easy', 'medium', 'hard'][v % 3], v % 2 ? 4 : 3, rng, iconDeck);
