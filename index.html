@@ -315,12 +315,35 @@
       <label>Book title
         <input type="text" id="bk-title" value="My Kids Activity Book">
       </label>
-      <label>Subtitle (for the wrap cover, optional)
+      <label>Subtitle (shows on the cover, optional)
         <input type="text" id="bk-subtitle" value="">
       </label>
-      <label>Author
+      <label>Author / brand name (your name, on the cover, spine and back)
         <input type="text" id="bk-author" value="">
       </label>
+      <div class="upload-block cover-designer">
+        <h3 class="upload-h">🎨 Cover Designer</h3>
+        <p class="hint">Design a beautiful cover in the style of the bestselling kids activity books:
+        your title and name, a bright theme, an ages badge and an activities badge.
+        The same design becomes page 1 of your book and the front of the KDP wrap cover.</p>
+        <div class="theme-picker" role="radiogroup" aria-label="Cover theme">
+          <label class="theme-opt"><input type="radio" name="bk-theme" value="rainbow" checked>
+            <span class="theme-swatch" style="background:linear-gradient(90deg,#e63946,#f4840b,#ffd166,#1e9e52,#2470c2)"></span>Rainbow Pop</label>
+          <label class="theme-opt"><input type="radio" name="bk-theme" value="space">
+            <span class="theme-swatch" style="background:linear-gradient(90deg,#0b1e4b,#274690)"></span>Space Adventure</label>
+          <label class="theme-opt"><input type="radio" name="bk-theme" value="jungle">
+            <span class="theme-swatch" style="background:linear-gradient(90deg,#14532d,#22a04b)"></span>Jungle Safari</label>
+          <label class="theme-opt"><input type="radio" name="bk-theme" value="candy">
+            <span class="theme-swatch" style="background:linear-gradient(90deg,#a4133c,#e75480)"></span>Candy Sweet</label>
+        </div>
+        <label>Ages badge (e.g. 4–8 — leave empty for no badge)
+          <input type="text" id="bk-ages" value="4–8">
+        </label>
+        <label class="check"><input type="checkbox" id="bk-cover-page1" checked>
+          Use my designed cover as page 1 of the book</label>
+        <div id="bk-cover-preview" class="cover-preview" aria-label="Live cover preview"></div>
+        <p class="hint">Cover settings are saved on this device, so your design is still here next time.</p>
+      </div>
       <label>Trim size
         <select id="bk-size">
           <option value="letter" selected>8.5 × 11 in</option>
@@ -361,7 +384,7 @@
         <h3 class="upload-h">KDP Wrap Cover</h3>
         <p class="hint">Builds a print-ready front + spine + back cover sized exactly from your book:
         your trim size, the total page count, KDP white-paper spine width and 0.125 in bleed.
-        The back cover lists what is really inside your book.</p>
+        It uses your Cover Designer theme, title and name; the back cover lists what is really inside your book.</p>
         <div class="btn-row">
           <button class="btn" id="bk-cover" disabled>🖼 Build Wrap Cover</button>
           <button class="btn" id="bk-cover-png" disabled>⬇ Cover PNG (300 DPI)</button>
