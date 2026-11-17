@@ -260,6 +260,22 @@
     return { data: edgesToLineArt(p.edge, w, h, t), width: w, height: h, threshold: t };
   }
 
+  /* Working-canvas size for an uploaded picture: cap the long side
+   * at maxSide, never upscale, keep the aspect ratio. A pure function
+   * of the source's natural size ONLY — the same file always yields
+   * the same canvas size (and therefore the same line art) on every
+   * run, regardless of decode timing. */
+  function fitImageSize(w, h, maxSide) {
+    w = Math.max(1, Math.round(w) || 1);
+    h = Math.max(1, Math.round(h) || 1);
+    var cap = Math.max(1, maxSide || 1200);
+    var scale = Math.min(1, cap / Math.max(w, h));
+    return {
+      width: Math.max(1, Math.round(w * scale)),
+      height: Math.max(1, Math.round(h * scale))
+    };
+  }
+
   /* ---------- Dot-to-Dot ---------- */
   function planDotToDot(page, opts) {
     var plan = newPlan('dottodot', page.title);
@@ -745,6 +761,7 @@
     edgesToLineArt: edgesToLineArt,
     processImageData: processImageData,
     imageToLineArt: imageToLineArt,
+    fitImageSize: fitImageSize,
     WIDTH: WIDTH
   };
 
