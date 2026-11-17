@@ -231,9 +231,13 @@
   }
 
   /* Detail slider (0-100) -> edge threshold. More detail = a lower
-     threshold = more lines kept. */
+     threshold = more lines kept. The DEFAULT is 70: at the old
+     default of 50 only the strongest-contrast edges of a typical
+     colourful picture survived the threshold, so a buyer's first
+     render showed only part of their picture; 70 sits at the foot
+     of the range where the whole picture appears. */
   function thresholdFromDetail(detail) {
-    var d = Math.max(0, Math.min(100, detail == null ? 50 : detail));
+    var d = Math.max(0, Math.min(100, detail == null ? 70 : detail));
     return Math.round(235 - d * 2.05);
   }
 
