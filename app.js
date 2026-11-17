@@ -222,11 +222,21 @@ if (typeof module !== 'undefined' && module.exports) {
       var reader = new FileReader();
       reader.onload = function () {
         var img = new Image();
-        img.onload = function () {
-          var maxSide = 1200;
-          var scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-          var w = Math.max(1, Math.round(img.width * scale));
-          var h = Math.max(1, Math.round(img.height * scale));
+        var started = false;
+        /* Convert ONLY from a fully decoded picture. img.onload can
+           fire while a (progressive) picture is still decoding, and
+           drawImage then captures a partial / low-quality frame — the
+           line art came out faint or incomplete, differently on every
+           run. img.decode() resolves only once the whole picture is
+           decoded, so the first render at any Detail value is the
+           same every time. The canvas size comes from the natural
+           size via PNGExport.fitImageSize (a pure function of it). */
+        function start() {
+          if (started) return;
+          started = true;
+          var fit = PNGExport.fitImageSize(
+            img.naturalWidth || img.width, img.naturalHeight || img.height, 1200);
+          var w = fit.width, h = fit.height;
           var canvas = document.createElement('canvas');
           canvas.width = w;
           canvas.height = h;
@@ -254,6 +264,17 @@ if (typeof module !== 'undefined' && module.exports) {
           status.textContent = 'That file does not look like a picture. Please try a JPG or PNG.';
         };
         img.src = reader.result;
+        if (typeof img.decode === 'function') {
+          img.decode().then(start, function () {
+            // decode() rejected (odd format): fall back to plain load
+            if (img.complete && img.naturalWidth > 0) start();
+            else img.onload = start;
+          });
+        } else if (img.complete && img.naturalWidth > 0) {
+          start();
+        } else {
+          img.onload = start;
+        }
       };
       reader.readAsDataURL(file);
     });
