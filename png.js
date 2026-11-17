@@ -453,12 +453,17 @@
   }
 
   /* ---------- KDP wrap cover (single full-wrap page, ~300 DPI) ----------
-   * cover: { title, subtitle, author, dims (KAB.wrapCoverDims),
+   * cover: { title, subtitle, author, ages, theme (id or object),
+   *          activityCount, activityLine, dims (KAB.wrapCoverDims),
    *          summary (KAB.bookSectionSummary), thumbDesigns: [ids] }
    * The canvas is dims.width x dims.height INCHES at 300 px/in, laid
-   * out as [back | spine | front] with the bleed inside the dims. */
+   * out as [back | spine | front] with the bleed inside the dims.
+   * Colours come from the SAME KAB cover theme that drives the HTML
+   * covers, so the PNG and the printed wrap always match. */
   function planWrapCover(cover) {
     var dims = cover.dims;
+    var theme = (cover.theme && typeof cover.theme === 'object')
+      ? cover.theme : KAB.getCoverTheme(cover.theme);
     var S = 300; // px per inch
     var plan = {
       type: 'wrapcover', title: cover.title || '',
@@ -471,24 +476,29 @@
     var backX = B, spineX = B + trimW, frontX = spineX + spineW;
     var top = B;
 
-    // front + spine brand blocks
-    plan.ops.push({ t: 'rect', x: spineX, y: 0, w: spineW, h: plan.height, color: '#0f2027' });
-    plan.ops.push({ t: 'rect', x: frontX, y: 0, w: plan.width - frontX, h: plan.height, color: '#2c5364' });
+    // themed blocks: back paper, spine, front
+    plan.ops.push({ t: 'rect', x: backX, y: 0, w: trimW, h: plan.height, color: theme.backBg });
+    plan.ops.push({ t: 'rect', x: spineX, y: 0, w: spineW, h: plan.height, color: theme.spineBg });
+    plan.ops.push({ t: 'rect', x: frontX, y: 0, w: plan.width - frontX, h: plan.height, color: theme.frontFlat });
+    plan.ops.push({ t: 'rect', x: frontX, y: 0, w: plan.width - frontX, h: 26, color: theme.band });
 
     // back cover: "Inside this book" from the book's real sections
     var by = top + 130;
-    text(plan, backX + 110, by, 'Inside this book', 92, { align: 'left', weight: 800, color: '#0f2027' });
+    text(plan, backX + 110, by, 'Inside this book', 92, { align: 'left', weight: 800, color: theme.backHeading });
     by += 120;
     (cover.summary || []).forEach(function (s) {
       var lineStr = '•  ' + s.count + ' ' + s.label +
         (s.levels && s.levels.length ? ' (' + s.levels.join(', ') + ')' : '');
-      text(plan, backX + 110, by, lineStr, 62, { align: 'left', color: '#33505c' });
+      text(plan, backX + 110, by, lineStr, 62, { align: 'left', color: theme.backText });
       by += 92;
     });
     by += 40;
-    text(plan, backX + 110, by, 'Create complete kids activity books in minutes —', 56, { align: 'left', color: '#48626e' });
-    text(plan, backX + 110, by + 76, 'print-ready pages with all solutions included.', 56, { align: 'left', color: '#48626e' });
-    text(plan, backX + 110, by + 200, 'SONGLAP DEALS', 54, { align: 'left', weight: 800, color: '#b98a1d' });
+    text(plan, backX + 110, by, 'Create complete kids activity books in minutes —', 56, { align: 'left', color: theme.backText });
+    text(plan, backX + 110, by + 76, 'print-ready pages with all solutions included.', 56, { align: 'left', color: theme.backText });
+    if (cover.author) {
+      text(plan, backX + 110, by + 190, 'by ' + cover.author, 60, { align: 'left', weight: 700, color: theme.backHeading });
+    }
+    text(plan, backX + 110, by + 290, 'SONGLAP DEALS', 54, { align: 'left', weight: 800, color: '#b98a1d' });
     // barcode placeholder: 2in x 1.2in at the back cover's bottom-right
     var bcW = 2 * S, bcH = 1.2 * S;
     var bcX = backX + trimW - 0.25 * S - bcW, bcY = top + trimH - 0.25 * S - bcH;
@@ -502,19 +512,61 @@
         t: 'textrot', x: spineX + spineW / 2, y: plan.height / 2,
         str: (cover.title || '') + (cover.author ? '  ·  ' + cover.author : ''),
         size: Math.min(64, spineW * 0.52), font: FONT, weight: 800,
-        color: GOLD, align: 'center', rot: -90
+        color: theme.spineColor, align: 'center', rot: -90
       });
     }
+
+    // front cover decorations: faceless star / moon / heart motifs
+    var decoFill = theme.badgeBg;
+    [[0.06, 0.06, 60], [0.94, 0.30, 48], [0.08, 0.78, 52], [0.93, 0.88, 58]].forEach(function (st) {
+      pathOp(plan, { pts: KAB.starPts(frontX + st[0] * trimW, st[1] * plan.height, st[2], st[2] * 0.48, 5), closed: true },
+        0, 0, 1, { fill: decoFill });
+    });
 
     // front cover
     var fx = frontX + (plan.width - frontX) / 2;
     var fy = top + 300;
-    text(plan, fx, fy, cover.title || 'My Kids Activity Book', 150,
-      { weight: 800, color: GOLD });
+    var titleStr = cover.title || 'My Kids Activity Book';
+    var titleSize = titleStr.length <= 22 ? 170 : (titleStr.length <= 40 ? 140 : 112);
+    if (theme.titleColors.length > 1) {
+      // rainbow title: one op per word, laid out side by side from an
+      // estimated total width (bold Arial ≈ 0.56 x size per char)
+      var words = titleStr.split(/\s+/).filter(Boolean);
+      var charW = titleSize * 0.56;
+      var totalW = words.reduce(function (acc, w) { return acc + w.length * charW; }, 0) +
+        (words.length - 1) * charW * 0.9;
+      var wx = fx - totalW / 2;
+      words.forEach(function (w, i) {
+        text(plan, wx, fy, w, titleSize, {
+          weight: 800, align: 'left', color: theme.titleColors[i % theme.titleColors.length]
+        });
+        wx += w.length * charW + charW * 0.9;
+      });
+    } else {
+      text(plan, fx, fy, titleStr, titleSize, { weight: 800, color: theme.titleColors[0] });
+    }
     fy += 130;
     if (cover.subtitle) {
-      text(plan, fx, fy, cover.subtitle, 66, { color: '#ffffff' });
-      fy += 120;
+      text(plan, fx, fy, cover.subtitle, 66, { color: theme.subtitleColor });
+      fy += 110;
+    }
+    if (cover.activityLine) {
+      text(plan, fx, fy, cover.activityLine, 54, { weight: 700, color: theme.lineColor });
+      fy += 110;
+    }
+    // starburst badges: ages (top-right), activity count (bottom-left)
+    if (cover.ages) {
+      var ax = frontX + trimW - 300, ay = top + 300;
+      pathOp(plan, { pts: KAB.starPts(ax, ay, 215, 165, 12), closed: true }, 0, 0, 1, { fill: theme.ageBadgeBg });
+      text(plan, ax, ay - 42, 'Ages', 52, { weight: 700, color: theme.ageBadgeColor });
+      text(plan, ax, ay + 48, cover.ages, 84, { weight: 800, color: theme.ageBadgeColor });
+    }
+    var badge = KAB.coverBadgeText(cover.activityCount || 0);
+    if (badge) {
+      var bx = frontX + 330, byy = top + trimH - 330;
+      pathOp(plan, { pts: KAB.starPts(bx, byy, 250, 192, 12), closed: true }, 0, 0, 1, { fill: theme.badgeBg });
+      text(plan, bx, byy - 40, badge.big, 96, { weight: 800, color: theme.badgeColor });
+      text(plan, bx, byy + 62, badge.small, 56, { weight: 700, color: theme.badgeColor });
     }
     var thumbs = (cover.thumbDesigns || []).slice(0, 3);
     var tw = Math.min(trimW * 0.62, 640), th = tw;
@@ -527,7 +579,7 @@
     });
     if (cover.author) {
       text(plan, fx, top + trimH - 150, 'by ' + cover.author, 72,
-        { weight: 700, color: '#ffffff' });
+        { weight: 700, color: theme.authorColor });
     }
     return plan;
   }
