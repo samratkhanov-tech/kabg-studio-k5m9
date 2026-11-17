@@ -106,7 +106,9 @@
       try {
         var rng = seedRng();
         var readingLevel = $('bk-reading-level') ? $('bk-reading-level').value : 'prek';
-        var pages = KAB.assembleBook({ counts: counts, readingLevel: readingLevel }, rng);
+        var countingRange = $('bk-counting-range') ? $('bk-counting-range').value : '1-10';
+        var pages = KAB.assembleBook(
+          { counts: counts, readingLevel: readingLevel, countingRange: countingRange }, rng);
         pages = KAB.insertCustomPages(pages, customColoringPages);
         var pageCount = renderBook(title, author, size, pages);
         lastBook = { title: title, author: author, size: size, pages: pages, totalPages: pageCount };
