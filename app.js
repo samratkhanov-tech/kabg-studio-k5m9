@@ -194,7 +194,7 @@ if (typeof module !== 'undefined' && module.exports) {
   function applyCustomDetail() {
     if (!customImg) return;
     var detail = parseInt($('coloring-detail').value, 10);
-    var threshold = PNGExport.thresholdFromDetail(isNaN(detail) ? 50 : detail);
+    var threshold = PNGExport.thresholdFromDetail(isNaN(detail) ? 70 : detail);
     var rgba = PNGExport.edgesToLineArt(customImg.edge, customImg.width, customImg.height, threshold);
     var canvas = document.createElement('canvas');
     canvas.width = customImg.width;
